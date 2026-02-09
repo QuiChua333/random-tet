@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Google Fonts Import */
+/* Google Fonts Import removed to fix parsing error - will be added to layout.tsx */
+
+@theme {
+  /* Vietnamese Tết Color Palette */
+  --color-tet-red-50: #fef2f2;
+  --color-tet-red-100: #fee2e2;
+  --color-tet-red-500: #ef4444;
+  --color-tet-red-600: #dc2626;
+  --color-tet-red-700: #b91c1c;
+  --color-tet-red-900: #7f1d1d;
+  
+  --color-tet-gold-50: #fffbeb;
+  --color-tet-gold-100: #fef3c7;
+  --color-tet-gold-300: #fcd34d;
+  --color-tet-gold-400: #fbbf24;
+  --color-tet-gold-500: #f59e0b;
+  --color-tet-gold-600: #d97706;
+  
+  --color-tet-green-500: #10b981;
+  --color-tet-green-600: #059669;
+  
+  /* Font Families */
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  
+  /* Custom Animations */
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-sparkle: sparkle 1.5s ease-in-out infinite;
+  --animate-firework: firework 1s ease-out forwards;
+  --animate-petal-fall: petal-fall 10s linear infinite;
+  --animate-confetti-fall: confetti-fall 4s linear infinite;
+}
+
+/* Custom Animations Keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes firework {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1.5) rotate(180deg); opacity: 0; }
+}
+
+@keyframes petal-fall {
+  0% { transform: translateY(-10px) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) translateX(50px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@layer base {
+  /* Base Styles */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Dynamic REM scaling based on viewport width */
+  html {
+    font-size: 0.833vw;
+  }
+
+  body {
+    font-family: var(--font-display);
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #f59e0b 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  /* Utility Classes - using theme colors */
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+    @apply bg-clip-text text-transparent;
+  }
+
+  .text-gradient-red {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    @apply bg-clip-text text-transparent;
+  }
+
+  .shadow-glow-gold {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(245, 158, 11, 0.3);
+  }
+
+  .shadow-glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(220, 38, 38, 0.3);
+  }
+  
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(127, 29, 29, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ef4444, #f59e0b);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #dc2626, #d97706);
+  }
+}
