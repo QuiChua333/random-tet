@@ -3,14 +3,18 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export default function Fireworks() {
+interface FireworksProps {
+  loop?: boolean;
+}
 
-  // Generate random firework particles - OPTIMIZED COUNT
-  const particles = Array.from({ length: 60 }, (_, i) => ({
+export default function Fireworks({ loop = false }: FireworksProps) {
+
+  // Generate random firework particles - INCREASED DENSITY
+  const particles = Array.from({ length: 120 }, (_, i) => ({
     id: i,
     angle: Math.random() * 360,
     distance: 100 + Math.random() * 800, 
-    delay: Math.random() * 0.5,
+    delay: Math.random() * 2,
     size: 0.5 + Math.random() * 1.0, 
     color: [
       '#fbbf24', '#f59e0b', '#ef4444', '#dc2626', '#10b981', 
@@ -18,13 +22,13 @@ export default function Fireworks() {
     ][Math.floor(Math.random() * 9)]
   }));
 
-  // Bursts (multiple explosions) - OPTIMIZED
-  const bursts = Array.from({ length: 5 }, (_, i) => ({
+  // Bursts (multiple explosions) - MORE BURSTS
+  const bursts = Array.from({ length: 10 }, (_, i) => ({
     id: i,
-    x: (Math.random() - 0.5) * 80, // % from center
-    y: (Math.random() - 0.5) * 80, // % from center
-    delay: i * 0.3,
-    color: ['#fbbf24', '#ef4444', '#10b981'][i % 3]
+    x: (Math.random() - 0.5) * 100, // % from center - wider spread
+    y: (Math.random() - 0.5) * 100, // % from center - wider spread
+    delay: (i * 0.2) % 2, // Loop every 2 seconds
+    color: ['#fbbf24', '#ef4444', '#10b981', '#ffffff'][i % 4]
   }));
 
   return (
@@ -58,7 +62,8 @@ export default function Fireworks() {
                   transition={{
                     duration: 0.8 + Math.random(),
                     delay: burst.delay,
-                    ease: "easeOut"
+                    ease: "easeOut",
+                    ...(loop && { repeat: Infinity, repeatDelay: 1 })
                   }}
                 />
              ))}
@@ -95,7 +100,8 @@ export default function Fireworks() {
             transition={{ 
               duration: 1.2 + Math.random() * 0.8, 
               delay: particle.delay,
-              ease: "circOut"
+              ease: "circOut",
+              ...(loop && { repeat: Infinity, repeatDelay: 0.5 })
             }}
           />
         );
@@ -109,7 +115,7 @@ export default function Fireworks() {
           scale: [0, 4, 0],
           opacity: [0.8, 0.4, 0]
         }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.8, ease: "easeOut", ...(loop && { repeat: Infinity, repeatDelay: 1.5 }) }}
       />
       
       {/* Sparkle effects - OPTIMIZED */}

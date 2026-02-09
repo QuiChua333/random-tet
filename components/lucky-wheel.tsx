@@ -6,6 +6,7 @@ import { generateNumbers, selectRandomNumber, calculateRotation, shuffleAndRecol
 import { Button } from "@/components/ui/button";
 import { Sparkles, Play } from "lucide-react";
 import Fireworks from "./fireworks";
+import EndGameCelebration from "./end-game-celebration";
 
 interface LuckyWheelProps {
   onSpinStart?: () => void;
@@ -47,6 +48,7 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [showContinue, setShowContinue] = useState(false);
   const [showFireworks, setShowFireworks] = useState(false);
+  const [showEndGame, setShowEndGame] = useState(false);
   const rotationRef = React.useRef(0);
   const controls = useAnimation();
   const buttonControls = useAnimation(); // For counter-rotating the button
@@ -206,6 +208,13 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
       console.log("Previous numbers:", prev);
       const filtered = prev.filter(n => n.value !== selectedNumber);
       console.log("After filter:", filtered);
+      
+      // If no numbers left, trigger end game
+      if (filtered.length === 0) {
+        setShowEndGame(true);
+        // Don't restart wheel logic, just return empty to clear
+      }
+      
       const shuffled = shuffleAndRecolor(filtered);
       console.log("New shuffled numbers:", shuffled);
       return shuffled;
@@ -215,12 +224,26 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
     setShowFireworks(false);
   };
 
+  const handleRestart = () => {
+    setShowEndGame(false);
+    setRemainingNumbers(generateNumbers());
+    localStorage.removeItem('wheel-numbers'); // Clear saved state on manual restart from end screen? Or just let state update it.
+    if (onReset) onReset();
+  };
+
   const segmentAngle = 360 / remainingNumbers.length;
 
   return (
     <div className="relative flex flex-col items-center gap-6 w-full h-full justify-center">
-      {/* Fireworks */}
-      {showFireworks && <Fireworks />}
+      {/* End Game Celebration Overlay */}
+      <AnimatePresence>
+        {showEndGame && (
+           <EndGameCelebration onRestart={handleRestart} />
+        )}
+      </AnimatePresence>
+
+      {/* Fireworks (show only if NOT in end game to avoid double fireworks) */}
+      {showFireworks && !showEndGame && <Fireworks />}
       
       {/* Main wheel container */}
       <div className="relative z-10 md:ml-60 xl:ml-100 w-[55rem] h-[55rem]">
@@ -239,12 +262,10 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
         >
           {/* Decorative petal-shaped arrow - Rotated 180deg to point down */}
           <svg 
-            width="45" 
-            height="60" 
             viewBox="0 0 60 80" 
             fill="none" 
             xmlns="http://www.w3.org/2000/svg" 
-            className="drop-shadow-[0_0.25rem_0.5rem_rgba(0,0,0,0.5)] rotate-180"
+            className="w-[2.8125rem] h-[3.75rem] drop-shadow-[0_0.25rem_0.5rem_rgba(0,0,0,0.5)] rotate-180"
           >
             {/* Outer glow */}
             <path 

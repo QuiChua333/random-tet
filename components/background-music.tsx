@@ -166,7 +166,7 @@ export const MusicControls = () => {
 // Main Background Music Component (Hidden, auto-plays on first click)
 export default function BackgroundMusic({ 
   src, 
-  initialVolume = 0.4 
+  initialVolume = 0.6
 }: BackgroundMusicProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hasTriedAutoPlay = useRef(false);

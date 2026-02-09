@@ -29,7 +29,7 @@ export default function RootLayout({
         {/* Background Music - Persists across all pages */}
         <BackgroundMusic 
           src={encodeURI("/Một Năm Mới Bình An.mp3")}
-          initialVolume={0.4}
+          initialVolume={0.6}
         />
       </body>
     </html>
