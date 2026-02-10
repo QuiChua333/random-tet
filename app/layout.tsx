@@ -31,7 +31,8 @@ export default function RootLayout({
           playlist={[
             encodeURI("/Một Năm Mới Bình An.mp3"),
             encodeURI("/Như Hoa Mùa Xuân.mp3"),
-            encodeURI("/Nụ Cười Xuân.mp3")
+            encodeURI("/Nụ Cười Xuân.mp3"),
+            encodeURI("/Ngày Xuân Long Phụng Sum Vầy.mp3")
           ]}
           initialVolume={0.6}
         />

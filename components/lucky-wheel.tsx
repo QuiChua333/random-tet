@@ -8,6 +8,9 @@ import { Sparkles, Play } from "lucide-react";
 import Fireworks from "./fireworks";
 import EndGameCelebration from "./end-game-celebration";
 
+// Special SSR prizes that get rainbow glow treatment
+const SSR_PRIZES = [12, 13, 19, 32, 33];
+
 interface LuckyWheelProps {
   onSpinStart?: () => void;
   onSpinEnd?: () => void;
@@ -438,7 +441,9 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
 
         {/* Winner Popup Overlay */}
         <AnimatePresence>
-          {showContinue && selectedNumber !== null && (
+          {showContinue && selectedNumber !== null && (() => {
+            const isSSR = SSR_PRIZES.includes(selectedNumber);
+            return (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -449,41 +454,89 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
                 initial={{ scale: 0.5, y: 50 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.5, y: 50 }}
-                className="bg-gradient-to-br from-red-600 to-red-800 p-[2px] rounded-3xl shadow-2xl max-w-lg w-full"
+                className={`p-[2px] rounded-3xl shadow-2xl max-w-lg w-full ${
+                  isSSR ? 'bg-gradient-to-br from-violet-600 via-cyan-400 to-rose-500' : 'bg-gradient-to-br from-red-600 to-red-800'
+                }`}
+                style={isSSR ? {
+                  animation: 'rainbow-border-glow 2s linear infinite',
+                } : undefined}
               >
-                  <div className="bg-white/10 backdrop-blur-md border-[2px] border-yellow-400/50 rounded-[1.4rem] pt-10 pb-8 px-8 flex flex-col items-center gap-6 text-center relative overflow-visible">
+                  <div className={`backdrop-blur-md rounded-[1.4rem] pt-10 pb-8 px-8 flex flex-col items-center gap-6 text-center relative overflow-hidden ${
+                    isSSR ? 'bg-black/70 border-[2px] border-white/30' : 'bg-white/10 border-[2px] border-yellow-400/50'
+                  }`}>
                     {/* Decorative corner patterns */}
-                    <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-yellow-400 rounded-tl-xl opacity-50" />
-                    <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-yellow-400 rounded-tr-xl opacity-50" />
-                    <div className="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-yellow-400 rounded-bl-xl opacity-50" />
-                    <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-yellow-400 rounded-br-xl opacity-50" />
+                    <div className={`absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 rounded-tl-xl opacity-50 ${isSSR ? 'border-cyan-400' : 'border-yellow-400'}`} />
+                    <div className={`absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 rounded-tr-xl opacity-50 ${isSSR ? 'border-rose-400' : 'border-yellow-400'}`} />
+                    <div className={`absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 rounded-bl-xl opacity-50 ${isSSR ? 'border-rose-400' : 'border-yellow-400'}`} />
+                    <div className={`absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 rounded-br-xl opacity-50 ${isSSR ? 'border-cyan-400' : 'border-yellow-400'}`} />
+
+                    {/* SSR: Diagonal shine sweep */}
+                    {isSSR && (
+                      <div
+                        className="absolute inset-0 pointer-events-none z-10"
+                        style={{
+                          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)',
+                          animation: 'rainbow-shine-sweep 2.5s ease-in-out infinite',
+                        }}
+                      />
+                    )}
+
+                    {/* SSR: Floating particles */}
+                    {isSSR && (
+                      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                        {[...Array(12)].map((_, i) => (
+                          <div
+                            key={`particle-${i}`}
+                            className="absolute rounded-full"
+                            style={{
+                              width: `${3 + Math.random() * 5}px`,
+                              height: `${3 + Math.random() * 5}px`,
+                              left: `${8 + Math.random() * 84}%`,
+                              bottom: `${Math.random() * 30}%`,
+                              background: ['#ff4444','#ffaa00','#44ff88','#4488ff','#dd44ff','#ffee44'][i % 6],
+                              animation: `ssr-particles ${1.5 + Math.random() * 2}s ease-out infinite`,
+                              animationDelay: `${Math.random() * 2}s`,
+                              opacity: 0.8,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                     
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
                       transition={{ delay: 0.2, type: "spring" }}
-                      className="text-6xl"
+                      className="text-6xl relative z-20"
                     >
-                      🎊
+                      {isSSR ? '⭐' : '🎊'}
                     </motion.div>
 
                     <h2
-                      className="text-4xl md:text-5xl font-black uppercase leading-loose pt-2"
-                      style={{
+                      className="text-4xl md:text-5xl font-black uppercase leading-loose pt-2 relative z-20"
+                      style={isSSR ? {
+                        animation: 'rainbow-text-hue 2s linear infinite',
+                      } : {
                         color: '#fde047',
                         textShadow: '0 0 20px rgba(253,224,71,0.6), 0 2px 4px rgba(0,0,0,0.3)',
                       }}
                     >
-                      Chúc Mừng!
+                      {isSSR ? '🌟 SSR! 🌟' : 'Chúc Mừng!'}
                     </h2>
                     
-                    <div className="space-y-2">
-                      <p className="text-white/90 text-xl font-medium">Bạn đã quay trúng phần quà số</p>
+                    <div className="space-y-2 relative z-20">
+                      <p className="text-white/90 text-xl font-medium">
+                        {isSSR ? 'Phần quà đặc biệt số' : 'Bạn đã quay trúng phần quà số'}
+                      </p>
                       <motion.div 
-                        className="text-8xl font-black text-yellow-400 drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+                        className={`text-8xl font-black drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] ${!isSSR ? 'text-yellow-400' : ''}`}
                         initial={{ scale: 0.5 }}
                         animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        transition={{ repeat: Infinity, duration: isSSR ? 1 : 1.5 }}
+                        style={isSSR ? {
+                          animation: 'rainbow-text-hue 1.5s linear infinite',
+                          filter: 'drop-shadow(0 4px 0 rgba(0,0,0,0.2))',
+                        } : undefined}
                       >
                         {selectedNumber}
                       </motion.div>
@@ -491,19 +544,26 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
 
                     <motion.button
                       onClick={handleContinue}
-                      className="mt-4 group relative px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg hover:shadow-yellow-400/50 transition-all duration-300 hover:-translate-y-1 active:translate-y-0"
+                      className={`mt-4 group relative px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:-translate-y-1 active:translate-y-0 z-20 ${
+                        isSSR
+                          ? 'bg-gradient-to-r from-cyan-400 via-violet-500 to-rose-400 hover:shadow-violet-400/50'
+                          : 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:shadow-yellow-400/50'
+                      }`}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <div className="absolute inset-0 rounded-full bg-white/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span className="relative text-2xl font-bold text-red-900 flex items-center gap-2 cursor-pointer">
-                        Tiếp tục <Play className="fill-red-900" />
+                      <span className={`relative text-2xl font-bold flex items-center gap-2 cursor-pointer ${
+                        isSSR ? 'text-white' : 'text-red-900'
+                      }`}>
+                        Tiếp tục <Play className={isSSR ? 'fill-white' : 'fill-red-900'} />
                       </span>
                     </motion.button>
                   </div>
               </motion.div>
             </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
 
         {/* Symmetrical Horses - Now Relative to Wheel */}
