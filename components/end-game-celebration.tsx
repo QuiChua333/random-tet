@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, useInView, useAnimation, Variants } from 'framer-motion';
 import Fireworks from './fireworks';
 import CircularFireworks from './circular-fireworks';
+import { useAudioState } from './background-music';
 
 // --- Premium 3D Text Reveal Component ---
 interface SplitText3DProps {
@@ -134,6 +135,57 @@ import { createPortal } from 'react-dom';
 export default function EndGameCelebration({ onRestart }: { onRestart?: () => void }) {
   const [step, setStep] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const { audioRef } = useAudioState();
+  
+  // Audios
+  const [camOnAudio] = useState(new Audio('/CamOn.mp3'));
+  const [vanSuAudio] = useState(new Audio('/VanSuNhuY.mp3'));
+
+  useEffect(() => {
+    // Duck Start: Lower background music volume
+    const originalVolume = audioRef ? audioRef.volume : 0.6;
+    if (audioRef) {
+        // Smooth fade out could be nice, but instant ducking is more responsive for voiceover
+        audioRef.volume = 0.1;
+    }
+
+    // Play "Cam On" immediately
+    camOnAudio.volume = 1.0;
+    camOnAudio.play().catch(e => {
+        if (e.name !== 'AbortError') {
+            console.error("Failed to play CamOn:", e);
+        }
+    });
+
+    // When "Cam On" ends, wait 2s, then show Finale and play "Van Su Nhu Y"
+    let timeoutId: NodeJS.Timeout;
+    const handleCamOnEnd = () => {
+        timeoutId = setTimeout(() => {
+            setStep(4);
+            vanSuAudio.volume = 1.0;
+            vanSuAudio.play().catch(e => {
+                if (e.name !== 'AbortError') {
+                    console.error("Failed to play VanSuNhuY:", e);
+                }
+            });
+        }, 1800); // 2s delay
+    };
+
+    camOnAudio.addEventListener('ended', handleCamOnEnd);
+
+    // Cleanup
+    return () => {
+        clearTimeout(timeoutId);
+        camOnAudio.pause();
+        camOnAudio.removeEventListener('ended', handleCamOnEnd);
+        vanSuAudio.pause(); // Just in case
+        
+        // Restore background music volume
+        if (audioRef) {
+            audioRef.volume = originalVolume;
+        }
+    };
+  }, [audioRef, camOnAudio, vanSuAudio]);
 
   useEffect(() => {
     setMounted(true);
@@ -141,13 +193,12 @@ export default function EndGameCelebration({ onRestart }: { onRestart?: () => vo
     const timer1 = setTimeout(() => setStep(1), 400);   // Logo moves to center
     const timer2 = setTimeout(() => setStep(2), 1200);  // Text 1: Thanks Leadership
     const timer3 = setTimeout(() => setStep(3), 3800);  // Text 2: Thanks Employees
-    const timer4 = setTimeout(() => setStep(4), 7000);  // Finale: Happy New Year
+    // Step 4 (Finale) is now triggered by audio completion
 
     return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
         clearTimeout(timer3);
-        clearTimeout(timer4);
     };
   }, []);
 
