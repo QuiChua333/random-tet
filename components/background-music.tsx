@@ -5,7 +5,7 @@ import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
 interface BackgroundMusicProps {
-  src: string;
+  playlist: string[];
   initialVolume?: number;
 }
 
@@ -165,11 +165,18 @@ export const MusicControls = () => {
 
 // Main Background Music Component (Hidden, auto-plays on first click)
 export default function BackgroundMusic({ 
-  src, 
+  playlist, 
   initialVolume = 0.6
 }: BackgroundMusicProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hasTriedAutoPlay = useRef(false);
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+
+  const handleSongEnd = () => {
+    const nextIndex = (currentSongIndex + 1) % playlist.length;
+    console.log(`🎵 Song ended. Switching to next track index: ${nextIndex}`);
+    setCurrentSongIndex(nextIndex);
+  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -179,6 +186,11 @@ export default function BackgroundMusic({
     globalAudioRef = audio;
     globalVolume = initialVolume;
     audio.volume = initialVolume;
+
+    // Reload audio when source changes
+    if (globalIsPlaying) {
+        audio.play().catch(e => console.error("Failed to play next song:", e));
+    }
 
     // Debug: Log when audio is ready
     const handleCanPlay = () => {
@@ -200,31 +212,18 @@ export default function BackgroundMusic({
     // Try to auto-play on first user click anywhere on the screen
     const handleFirstClick = () => {
       if (!hasTriedAutoPlay.current && audio && !globalIsPlaying) {
-        hasTriedAutoPlay.current = true;
         console.log("🎵 Attempting to play music...");
-        console.log("📊 Audio state before play:", {
-          volume: audio.volume,
-          muted: audio.muted,
-          paused: audio.paused,
-          src: audio.src,
-          readyState: audio.readyState
-        });
         
         audio.play()
           .then(() => {
+            hasTriedAutoPlay.current = true;
             globalIsPlaying = true;
             notifyListeners();
             console.log("✅ Music auto-started on first click");
-            console.log("📊 Audio state after play:", {
-              volume: audio.volume,
-              muted: audio.muted,
-              paused: audio.paused,
-              currentTime: audio.currentTime,
-              duration: audio.duration
-            });
           })
           .catch((error) => {
-            console.log("⚠️ Auto-play prevented, use Play button:", error);
+            console.log("⚠️ Auto-play attempt failed, will retry on next click:", error);
+            // Don't set hasTriedAutoPlay.current = true, so we try again
           });
       }
     };
@@ -238,14 +237,15 @@ export default function BackgroundMusic({
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadeddata', handleLoadedData);
     };
-  }, [initialVolume]);
+
+  }, [initialVolume, currentSongIndex]); // Re-run effect when song changes
 
   return (
     <>
       <audio 
         ref={audioRef} 
-        src={src} 
-        loop={true}
+        src={playlist[currentSongIndex]} 
+        onEnded={handleSongEnd}
         preload="auto"
       />
       

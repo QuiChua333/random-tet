@@ -28,7 +28,11 @@ export default function RootLayout({
         
         {/* Background Music - Persists across all pages */}
         <BackgroundMusic 
-          src={encodeURI("/Một Năm Mới Bình An.mp3")}
+          playlist={[
+            encodeURI("/Một Năm Mới Bình An.mp3"),
+            encodeURI("/Như Hoa Mùa Xuân.mp3"),
+            encodeURI("/Nụ Cười Xuân.mp3")
+          ]}
           initialVolume={0.6}
         />
       </body>
