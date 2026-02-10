@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { motion, useAnimation, AnimatePresence, type Variants } from "framer-motion";
 import { generateNumbers, selectRandomNumber, calculateRotation, shuffleAndRecolor, type WheelNumber } from "@/lib/wheel-data";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,14 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
   const controls = useAnimation();
   const buttonControls = useAnimation(); // For counter-rotating the button
 
+  // Force mechanic state
+  const [force, setForce] = useState(0);
+  const [isCharging, setIsCharging] = useState(false);
+  const [spinDuration, setSpinDuration] = useState(4);
+  const chargeStartTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
+  const CHARGE_DURATION_MS = 2000; // 2 seconds for one full cycle (0→1→0)
+
   // Determine animation state
   const gameState = isSpinning ? 'spinning' : (showContinue ? 'won' : 'idle');
 
@@ -76,10 +84,10 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
       scale: 1.1,
       rotate: 0, // No rotation needed
       transition: { 
-        duration: 4, 
+        duration: spinDuration, 
         ease: "easeInOut",
-        left: { duration: 4, ease: "easeInOut" },
-        x: { duration: 4, ease: "easeInOut" }
+        left: { duration: spinDuration, ease: "easeInOut" },
+        x: { duration: spinDuration, ease: "easeInOut" }
       }
     },
     won: {
@@ -118,10 +126,10 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
       scale: 1.1,
       rotate: 0, // No rotation needed
       transition: { 
-        duration: 4, 
+        duration: spinDuration, 
         ease: "easeInOut",
-        left: { duration: 4, ease: "easeInOut" },
-        x: { duration: 4, ease: "easeInOut" }
+        left: { duration: spinDuration, ease: "easeInOut" },
+        x: { duration: spinDuration, ease: "easeInOut" }
       }
     },
     won: {
@@ -140,65 +148,92 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
     }
   };
 
-  const handleSpin = async () => {
-    if (isSpinning || remainingNumbers.length === 0) {
-      if (remainingNumbers.length === 0) {
-        alert("Đã hết số!");
-      }
+  // --- Charge loop (ping-pong: 0→1→0→1→...) ---
+  const updateCharge = useCallback(() => {
+    const elapsed = performance.now() - chargeStartTimeRef.current;
+    // Each half-cycle is CHARGE_DURATION_MS/2 ms (1s up, 1s down)
+    const halfCycle = CHARGE_DURATION_MS / 2;
+    const cyclePos = (elapsed % CHARGE_DURATION_MS) / halfCycle; // 0→2 repeating
+    // ping-pong: 0→1 in first half, 1→0 in second half
+    const progress = cyclePos <= 1 ? cyclePos : 2 - cyclePos;
+    setForce(progress);
+    animationFrameRef.current = requestAnimationFrame(updateCharge);
+  }, []);
+
+  const handlePointerDown = useCallback(() => {
+    if (isSpinning || showContinue || remainingNumbers.length === 0) {
+      if (remainingNumbers.length === 0) alert("Đã hết số!");
       return;
     }
+    setIsCharging(true);
+    setForce(0);
+    chargeStartTimeRef.current = performance.now();
+    animationFrameRef.current = requestAnimationFrame(updateCharge);
+  }, [isSpinning, showContinue, remainingNumbers.length, updateCharge]);
 
+  const cancelCharge = useCallback(() => {
+    if (!isCharging) return;
+    cancelAnimationFrame(animationFrameRef.current);
+    setIsCharging(false);
+    setForce(0);
+  }, [isCharging]);
+
+  const handlePointerUp = useCallback(async () => {
+    if (!isCharging) return;
+    cancelAnimationFrame(animationFrameRef.current);
+    const currentForce = force;
+    setIsCharging(false);
+
+    // --- Spin with force ---
     setIsSpinning(true);
     setShowContinue(false);
     setShowFireworks(false);
     if (onSpinStart) onSpinStart();
 
-    // Select random number
     const selected = selectRandomNumber(remainingNumbers);
 
-    // If only 1 number left, skip animation and show result immediately
+    // If only 1 number left, skip animation
     if (remainingNumbers.length === 1) {
       setSelectedNumber(selected.value);
       setShowFireworks(true);
       setShowContinue(true);
       setIsSpinning(false);
+      setForce(0);
       if (onSpinEnd) onSpinEnd();
       return;
     }
-    
-    // Calculate rotation
-    console.log("Spinning - remaining numbers:", remainingNumbers);
-    const newRotation = calculateRotation(selected.value, remainingNumbers, rotationRef.current);
-    console.log("Selected Value:", selected.value);
-    console.log("New Rotation:", newRotation);
-    rotationRef.current = newRotation;
 
-    // Animate wheel spin
+    const { rotation: newRotation, duration } = calculateRotation(
+      selected.value, remainingNumbers, rotationRef.current, currentForce
+    );
+    rotationRef.current = newRotation;
+    setSpinDuration(duration); // Sync horse animation with wheel spin
+
+    // Animate wheel spin with force-influenced duration
     await Promise.all([
       controls.start({
         rotate: newRotation,
         transition: {
-          duration: 4,
+          duration,
           ease: [0.25, 0.1, 0.25, 1],
         },
       }),
-      // Counter-rotate the button to keep it stationary
       buttonControls.start({
         rotate: -newRotation,
         transition: {
-          duration: 4,
+          duration,
           ease: [0.25, 0.1, 0.25, 1],
         },
       })
     ]);
 
-    // Show result with fireworks
     setSelectedNumber(selected.value);
     setShowFireworks(true);
     setShowContinue(true);
     setIsSpinning(false);
+    setForce(0);
     if (onSpinEnd) onSpinEnd();
-  };
+  }, [isCharging, force, remainingNumbers, controls, buttonControls, onSpinStart, onSpinEnd]);
 
   const handleContinue = () => {
     console.log("Continuing - removing:", selectedNumber);
@@ -356,17 +391,18 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
           <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
             <motion.div animate={buttonControls}>
                 <motion.button
-                  onClick={handleSpin}
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handlePointerUp}
+                  onPointerLeave={cancelCharge}
                   disabled={isSpinning || showContinue}
-                  className="pointer-events-auto relative group cursor-pointer disabled:cursor-not-allowed"
-                  animate={{ scale: [1, 1.05, 1] }}
+                  className="pointer-events-auto relative group cursor-pointer disabled:cursor-not-allowed select-none touch-none"
+                  animate={{ scale: isCharging ? [1, 1.08, 1] : [1, 1.05, 1] }}
                   transition={{ 
-                    duration: 2, 
+                    duration: isCharging ? 0.3 : 2, 
                     repeat: Infinity, 
                     ease: "easeInOut" 
                   }}
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={isCharging ? undefined : { scale: 1.15 }}
                 >
                   {/* Pulse wave effect on hover */}
                   <div className="absolute inset-0 rounded-full bg-yellow-400/50 blur-md opacity-0 group-hover:opacity-100 animate-pulse transition-opacity duration-300" />
@@ -374,6 +410,18 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
                   
                   {/* Idle Glow */}
                   <div className="absolute inset-0 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse" />
+
+                  {/* Charging ring glow */}
+                  {isCharging && (
+                    <motion.div
+                      className="absolute -inset-2 rounded-full"
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 0.4, repeat: Infinity }}
+                      style={{
+                        boxShadow: `0 0 ${20 + force * 40}px ${force > 0.7 ? 'rgba(239,68,68,0.8)' : force > 0.4 ? 'rgba(234,179,8,0.8)' : 'rgba(34,197,94,0.8)'}`,
+                      }}
+                    />
+                  )}
 
                   <div 
                     className="w-[5rem] h-[5rem] md:w-[7rem] md:h-[7rem] rounded-full shadow-lg flex items-center justify-center border-[0.25rem] border-white relative z-10 group-hover:shadow-[0_0_2.5rem_rgba(251,191,36,0.8)] transition-shadow duration-300 bg-cover bg-center"
@@ -403,7 +451,7 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
                 exit={{ scale: 0.5, y: 50 }}
                 className="bg-gradient-to-br from-red-600 to-red-800 p-[2px] rounded-3xl shadow-2xl max-w-lg w-full"
               >
-                  <div className="bg-white/10 backdrop-blur-md border-[2px] border-yellow-400/50 rounded-[1.4rem] p-8 flex flex-col items-center gap-6 text-center relative overflow-hidden">
+                  <div className="bg-white/10 backdrop-blur-md border-[2px] border-yellow-400/50 rounded-[1.4rem] pt-10 pb-8 px-8 flex flex-col items-center gap-6 text-center relative overflow-visible">
                     {/* Decorative corner patterns */}
                     <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-yellow-400 rounded-tl-xl opacity-50" />
                     <div className="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-yellow-400 rounded-tr-xl opacity-50" />
@@ -414,16 +462,23 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
                       initial={{ scale: 0 }}
                       animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
                       transition={{ delay: 0.2, type: "spring" }}
+                      className="text-6xl"
                     >
-                      <Sparkles className="w-16 h-16 text-yellow-300 drop-shadow-[0_0_10px_rgba(253,224,71,0.8)]" />
+                      🎊
                     </motion.div>
 
-                    <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 drop-shadow-sm uppercase">
+                    <h2
+                      className="text-4xl md:text-5xl font-black uppercase leading-loose pt-2"
+                      style={{
+                        color: '#fde047',
+                        textShadow: '0 0 20px rgba(253,224,71,0.6), 0 2px 4px rgba(0,0,0,0.3)',
+                      }}
+                    >
                       Chúc Mừng!
                     </h2>
                     
                     <div className="space-y-2">
-                      <p className="text-white/90 text-xl font-medium">Bạn đã quay trúng số</p>
+                      <p className="text-white/90 text-xl font-medium">Bạn đã quay trúng phần quà số</p>
                       <motion.div 
                         className="text-8xl font-black text-yellow-400 drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                         initial={{ scale: 0.5 }}
@@ -473,12 +528,84 @@ export default function LuckyWheel({ onSpinStart, onSpinEnd, onReset }: LuckyWhe
              initial={{ left: "100%", x: 0, y: 0, scale: 1 }}
              animate={gameState}
            >
-               <img 
-                src={isSpinning ? "/ngua22-chay.gif" : "/ngua2.png"} 
+               <img
+                src={isSpinning ? "/ngua22-chay.gif" : "/ngua2.png"}
                 className="w-full h-full object-contain drop-shadow-2xl"
                />
            </motion.div>
-        </div>
+         </div>
+
+        {/* Force Bar - positioned below the wheel */}
+        <AnimatePresence>
+          {(isCharging || force > 0) && !isSpinning && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2"
+            >
+              {/* Hint text */}
+              <motion.p
+                className="text-sm md:text-base font-bold text-yellow-200 tracking-wider uppercase whitespace-nowrap px-4 py-1.5 rounded-lg border border-yellow-400/40"
+                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                {force < 0.3 ? '🔥 Giữ để tăng lực!' : force < 0.7 ? '💪 Mạnh hơn nữa!' : '🚀 TỐI ĐA!'}
+              </motion.p>
+
+              {/* Force bar container */}
+              <motion.div
+                className="relative w-[16rem] md:w-[20rem] h-[1.5rem] md:h-[2rem] rounded-full overflow-hidden border-2 border-yellow-400/60"
+                style={{
+                  background: 'rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(8px)',
+                }}
+                animate={force > 0.85 ? { x: [0, -2, 2, -2, 2, 0] } : undefined}
+                transition={force > 0.85 ? { duration: 0.15, repeat: Infinity } : undefined}
+              >
+                {/* Fill */}
+                <motion.div
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{
+                    width: `${force * 100}%`,
+                    background: `linear-gradient(90deg,
+                      #22c55e 0%,
+                      #84cc16 25%,
+                      #eab308 50%,
+                      #f97316 75%,
+                      #ef4444 100%)`,
+                    boxShadow: force > 0.5
+                      ? `0 0 ${10 + force * 20}px ${force > 0.7 ? 'rgba(239,68,68,0.6)' : 'rgba(234,179,8,0.6)'}`
+                      : 'none',
+                  }}
+                  transition={{ type: 'tween', duration: 0.05 }}
+                />
+
+                {/* Gloss overlay */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/20 to-transparent" />
+
+                {/* Tick marks */}
+                {[0.25, 0.5, 0.75].map((tick) => (
+                  <div
+                    key={tick}
+                    className="absolute top-0 bottom-0 w-[1px] bg-white/30"
+                    style={{ left: `${tick * 100}%` }}
+                  />
+                ))}
+              </motion.div>
+
+              {/* Force percentage */}
+              <span
+                className="text-xs md:text-sm font-bold text-yellow-300 px-3 py-1 rounded-md border border-yellow-400/30"
+                style={{ background: 'rgba(0,0,0,0.5)' }}
+              >
+                {Math.round(force * 100)}%
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -18,15 +18,35 @@ export default function TetHeader() {
 
        {/* Text & Greetings Group - Moved to Left */}
        <div className="flex flex-col items-start text-left pointer-events-auto ml-[0.125rem] md:w-[31.25rem] xl:w-[35vw] xl:max-w-[30rem] mt-[2rem]">
-          <h1 className="text-[2rem] md:text-[3.5rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-500 to-yellow-600 drop-shadow-[0_0.125rem_0.25rem_rgba(0,0,0,0.8)] font-display tracking-wide uppercase leading-tight">
-            Chúc Mừng <br/> Năm Mới
-          </h1>
+           <h1
+             className="text-[2rem] md:text-[3.5rem] font-black font-display tracking-wide uppercase leading-tight"
+             style={{
+                background: 'linear-gradient(270deg, #FFD700, #FFF8DC, #E8A317, #FFE55C, #FFAA00, #FFF1A8, #FFD700)',
+                backgroundSize: '400% 100%',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                animation: 'title-shimmer 5s ease-in-out infinite, title-glow-pulse 3s ease-in-out infinite',
+              }}
+           >
+             Chúc Mừng <br/> Năm Mới
+           </h1>
           
           <div className="flex items-center gap-[0.125rem] mt-[1rem] mb-[1rem]">
              <span className="text-[2rem] animate-spin-slow">🌸</span>
-             <h2 className="text-[1.5rem] md:text-[2rem] font-bold text-white drop-shadow-[0_0.125rem_0.125rem_rgba(220,38,38,1)]">
-               Vòng Quay May Mắn 2026
-             </h2>
+              <h2
+                className="text-[1.5rem] md:text-[2rem] font-bold"
+                style={{
+                  background: 'linear-gradient(270deg, #FFCC80, #FFE0B2, #FFB74D, #FFD54F, #FFCC80)',
+                  backgroundSize: '400% 100%',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  animation: 'subtitle-shimmer 4s ease-in-out infinite, subtitle-glow-pulse 3.5s ease-in-out infinite',
+                }}
+              >
+                Vòng Quay May Mắn 2026
+              </h2>
           </div>
 
           <div className="mt-[0.5rem] bg-tet-red-900/80 backdrop-blur-sm px-[1rem] py-[0.5rem] rounded-full border border-tet-gold-500 shadow-lg">
@@ -50,6 +70,16 @@ export default function TetHeader() {
             alt="Hoa Mai" 
             className="w-full h-full object-contain drop-shadow-2xl" 
             style={{ transform: 'rotate(-0deg)' }}
+           />
+       </div>
+
+       {/* Left: Peach Blossom Branch */}
+       <div className="absolute bottom-[-27%] left-[-5%] w-[56vw] max-w-[30rem] pointer-events-none animate-sway origin-bottom-left z-0">
+           <img 
+            src="/hoadao.png" 
+            alt="Hoa Đào" 
+            className="w-full h-full object-contain drop-shadow-2xl" 
+            style={{ transform: 'scaleX(-1)' }}
            />
        </div>
 

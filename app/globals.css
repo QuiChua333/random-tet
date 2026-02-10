@@ -61,6 +61,26 @@
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
+@keyframes title-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes title-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(255,215,0,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+  50% { filter: drop-shadow(0 0 24px rgba(255,215,0,0.7)) drop-shadow(0 0 48px rgba(255,170,0,0.3)) drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+}
+
+@keyframes subtitle-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes subtitle-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,183,77,0.3)) drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255,204,128,0.5)) drop-shadow(0 0 32px rgba(255,183,77,0.2)) drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
+}
+
 @layer base {
   /* Base Styles */
   * {

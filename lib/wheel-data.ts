@@ -26,41 +26,45 @@ export function selectRandomNumber(remainingNumbers: WheelNumber[]): WheelNumber
   return remainingNumbers[randomIndex];
 }
 
-// Calculate rotation to land on specific number
+// Calculate rotation to land on specific number, influenced by force
+// force: 0–1, controls how many extra spins and animation duration
 export function calculateRotation(
   selectedValue: number, 
   remainingNumbers: WheelNumber[],
-  currentRotation: number
-): number {
+  currentRotation: number,
+  force: number = 1
+): { rotation: number; duration: number } {
   const totalNumbers = remainingNumbers.length;
   const segmentAngle = 360 / totalNumbers;
   
+  // Clamp force between 0.1 and 1
+  const clampedForce = Math.max(0.1, Math.min(1, force));
+
   // Find index of selected number in remaining numbers
   const targetIndex = remainingNumbers.findIndex(n => n.value === selectedValue);
   
   // Calculate the angle to the CENTER of the target segment
   const prizeCenter = (targetIndex * segmentAngle) + (segmentAngle / 2);
   
-  // We want to land such that (prizeCenter + finalRotation) % 360 === 0
-  // because 0 degrees is the pointer position (top)
+  // Force controls extra spin rotations: low force = 2 spins, max force = 15 spins
+  const minSpins = 2;
+  const maxSpins = 15;
+  const spinCount = minSpins + (maxSpins - minSpins) * clampedForce;
+  const spinAddition = 360 * spinCount;
   
-  // 1. Calculate the rotation we want to add for spinning effect (e.g. 5 full spins)
-  const spinAddition = 360 * 5;
-  
-  // 2. Calculate a tentative target based on current rotation + spin
+  // Calculate tentative rotation
   const tentativeRotation = currentRotation + spinAddition;
   
-  // 3. Calculate the current alignment of the prize at this tentative rotation
-  // We use ((a % n) + n) % n to handle negative numbers correctly in JS
+  // Align to prize center
   const currentAlignment = ((prizeCenter + tentativeRotation) % 360 + 360) % 360;
-  
-  // 4. Subtract the misalignment to align perfectly to 0
-  // If currentAlignment is 10, we subtract 10.
-  // If currentAlignment is 350, we subtract 350.
-  // This ensures (prizeCenter + result) % 360 === 0.
   const finalRotation = tentativeRotation - currentAlignment;
   
-  return finalRotation;
+  // Duration scales with force: low force ≈ 2.5s, max force ≈ 10s
+  const minDuration = 2.5;
+  const maxDuration = 10;
+  const duration = minDuration + (maxDuration - minDuration) * clampedForce;
+
+  return { rotation: finalRotation, duration };
 }
 
 
