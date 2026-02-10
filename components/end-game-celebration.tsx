@@ -216,7 +216,7 @@ export default function EndGameCelebration({ onRestart }: { onRestart?: () => vo
             {step >= 3 && (
                  <div className={`${step >= 4 ? 'hidden' : 'block'} min-h-[4rem] flex items-center justify-center`}>
                     <SplitText3D 
-                        text="Cảm ơn toàn thể CBNV đã nỗ lực, cống hiến hết mình trong năm vừa qua"
+                        text="Cảm ơn toàn thể nhân viên đã nỗ lực, cống hiến hết mình trong năm vừa qua"
                         className="text-3xl md:text-5xl font-semibold text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] max-w-5xl mx-auto leading-relaxed tracking-wide"
                         delay={0.15}
                     />
