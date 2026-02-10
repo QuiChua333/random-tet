@@ -142,11 +142,20 @@ export default function EndGameCelebration({ onRestart }: { onRestart?: () => vo
   const [vanSuAudio] = useState(new Audio('/VanSuNhuY.mp3'));
 
   useEffect(() => {
-    // Duck Start: Lower background music volume
+    // Duck Start: Lower background music volume smoothly
     const originalVolume = audioRef ? audioRef.volume : 0.6;
+    const targetDuckVolume = 0.1;
+    let fadeOutInterval: NodeJS.Timeout;
+    
     if (audioRef) {
-        // Smooth fade out could be nice, but instant ducking is more responsive for voiceover
-        audioRef.volume = 0.1;
+        // Clear any existing intervals if necessary (though this is mount, so unlikely)
+        fadeOutInterval = setInterval(() => {
+            if (audioRef.volume > targetDuckVolume) {
+                audioRef.volume = Math.max(targetDuckVolume, audioRef.volume - 0.05);
+            } else {
+                clearInterval(fadeOutInterval);
+            }
+        }, 100); // Fade out over ~1s
     }
 
     // Play "Cam On" immediately
@@ -171,17 +180,38 @@ export default function EndGameCelebration({ onRestart }: { onRestart?: () => vo
         }, 1800); // 2s delay
     };
 
+    // When "Van Su Nhu Y" ends, wait 1s, then restore background music
+    let restoreTimeoutId: NodeJS.Timeout;
+    const handleVanSuEnd = () => {
+        restoreTimeoutId = setTimeout(() => {
+            if (audioRef) {
+                // Smooth fade in manually 
+                const fadeIn = setInterval(() => {
+                    if (audioRef.volume < originalVolume) {
+                        audioRef.volume = Math.min(originalVolume, audioRef.volume + 0.02);
+                    } else {
+                        clearInterval(fadeIn);
+                    }
+                }, 50); // Smoother increments
+            }
+        }, 1000); // 1s delay
+    };
+
     camOnAudio.addEventListener('ended', handleCamOnEnd);
+    vanSuAudio.addEventListener('ended', handleVanSuEnd);
 
     // Cleanup
     return () => {
         clearTimeout(timeoutId);
+        clearTimeout(restoreTimeoutId);
+        clearInterval(fadeOutInterval);
         camOnAudio.pause();
         camOnAudio.removeEventListener('ended', handleCamOnEnd);
-        vanSuAudio.pause(); // Just in case
+        vanSuAudio.pause(); 
+        vanSuAudio.removeEventListener('ended', handleVanSuEnd);
         
-        // Restore background music volume
-        if (audioRef) {
+        // Restore background music volume if not already restored
+        if (audioRef && audioRef.volume < originalVolume) {
             audioRef.volume = originalVolume;
         }
     };
